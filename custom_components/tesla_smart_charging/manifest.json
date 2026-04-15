@@ -5,9 +5,10 @@
   "config_flow": true,
   "documentation": "https://github.com/mvahur-sudo/tesla-smart-charging",
   "integration_type": "service",
+  "homeassistant": "2025.1.0",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/mvahur-sudo/tesla-smart-charging/issues",
   "loggers": ["custom_components.tesla_smart_charging"],
   "requirements": [],
-  "version": "0.2.1"
+  "version": "0.2.2"
 }
