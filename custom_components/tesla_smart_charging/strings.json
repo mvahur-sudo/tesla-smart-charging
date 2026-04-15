@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tesla Smart Charging",
+        "description": "Configure the source entities and planning parameters.",
+        "data": {
+          "name": "Name",
+          "price_entity": "Current price entity",
+          "tesla_battery_entity": "Tesla battery entity",
+          "tesla_location_entity": "Tesla location entity",
+          "tesla_plugged_entity": "Tesla plugged-in entity",
+          "tesla_charge_limit_entity": "Tesla charge limit entity",
+          "solar_power_entity": "Solar production entity",
+          "grid_power_entity": "Grid power entity",
+          "wall_power_entity": "Wall connector power entity",
+          "sauna_power_entity": "Sauna power entity",
+          "sauna_boolean_entity": "Sauna boolean entity",
+          "mode_entity": "Manual mode entity",
+          "thursday_event_entity": "Thursday event entity",
+          "home_state": "State value meaning home",
+          "max_price_cents": "Maximum acceptable price (c/kWh)",
+          "network_fee_cents": "Network fee (c/kWh)",
+          "other_fees_cents": "Other fees (c/kWh)",
+          "solar_min_surplus_w": "Solar surplus threshold (W)",
+          "sauna_power_threshold_w": "Sauna active threshold (W)",
+          "battery_min_monday": "Monday minimum battery (%)",
+          "battery_min_thursday": "Thursday event minimum battery (%)",
+          "battery_min_default": "Default minimum battery (%)",
+          "battery_min_weekend": "Weekend minimum battery (%)",
+          "workday_cutoff": "Workday cutoff time",
+          "thursday_event_time": "Thursday event time"
+        }
+      }
+    }
+  }
+}

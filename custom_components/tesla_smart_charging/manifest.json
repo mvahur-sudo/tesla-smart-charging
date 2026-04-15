@@ -1,0 +1,13 @@
+{
+  "domain": "tesla_smart_charging",
+  "name": "Tesla Smart Charging",
+  "codeowners": ["@mvahur-sudo"],
+  "config_flow": true,
+  "documentation": "https://github.com/mvahur-sudo/tesla-smart-charging",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/mvahur-sudo/tesla-smart-charging/issues",
+  "loggers": ["custom_components.tesla_smart_charging"],
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,56 @@
+DOMAIN = "tesla_smart_charging"
+PLATFORMS = ["sensor", "binary_sensor"]
+
+CONF_NAME = "name"
+CONF_PRICE_ENTITY = "price_entity"
+CONF_TESLA_BATTERY_ENTITY = "tesla_battery_entity"
+CONF_TESLA_LOCATION_ENTITY = "tesla_location_entity"
+CONF_TESLA_PLUGGED_ENTITY = "tesla_plugged_entity"
+CONF_TESLA_CHARGE_LIMIT_ENTITY = "tesla_charge_limit_entity"
+CONF_SOLAR_POWER_ENTITY = "solar_power_entity"
+CONF_GRID_POWER_ENTITY = "grid_power_entity"
+CONF_WALL_POWER_ENTITY = "wall_power_entity"
+CONF_SAUNA_POWER_ENTITY = "sauna_power_entity"
+CONF_SAUNA_BOOLEAN_ENTITY = "sauna_boolean_entity"
+CONF_MODE_ENTITY = "mode_entity"
+CONF_THURSDAY_EVENT_ENTITY = "thursday_event_entity"
+CONF_MAX_PRICE_CENTS = "max_price_cents"
+CONF_NETWORK_FEE_CENTS = "network_fee_cents"
+CONF_OTHER_FEES_CENTS = "other_fees_cents"
+CONF_SOLAR_MIN_SURPLUS_W = "solar_min_surplus_w"
+CONF_SAUNA_POWER_THRESHOLD_W = "sauna_power_threshold_w"
+CONF_BATTERY_MIN_MONDAY = "battery_min_monday"
+CONF_BATTERY_MIN_THURSDAY = "battery_min_thursday"
+CONF_BATTERY_MIN_DEFAULT = "battery_min_default"
+CONF_BATTERY_MIN_WEEKEND = "battery_min_weekend"
+CONF_WORKDAY_CUTOFF = "workday_cutoff"
+CONF_THURSDAY_EVENT_TIME = "thursday_event_time"
+CONF_HOME_STATE = "home_state"
+
+DEFAULT_NAME = "Tesla Smart Charging"
+DEFAULT_MAX_PRICE_CENTS = 15.0
+DEFAULT_NETWORK_FEE_CENTS = 3.5
+DEFAULT_OTHER_FEES_CENTS = 2.0
+DEFAULT_SOLAR_MIN_SURPLUS_W = 1000.0
+DEFAULT_SAUNA_POWER_THRESHOLD_W = 500.0
+DEFAULT_BATTERY_MIN_MONDAY = 80
+DEFAULT_BATTERY_MIN_THURSDAY = 40
+DEFAULT_BATTERY_MIN_DEFAULT = 30
+DEFAULT_BATTERY_MIN_WEEKEND = 30
+DEFAULT_WORKDAY_CUTOFF = "08:00"
+DEFAULT_THURSDAY_EVENT_TIME = "18:00"
+DEFAULT_HOME_STATE = "home"
+
+ATTR_REASON = "reason"
+ATTR_TARGET_BATTERY = "target_battery"
+ATTR_NEXT_DEADLINE = "next_deadline"
+ATTR_REAL_PRICE_CENTS = "real_price_cents"
+ATTR_SOLAR_SURPLUS_W = "solar_surplus_w"
+ATTR_CAR_HOME = "car_home"
+ATTR_PLUGGED_IN = "plugged_in"
+ATTR_SAUNA_ACTIVE = "sauna_active"
+ATTR_MODE = "mode"
+ATTR_TESLA_LIMIT_TOO_LOW = "tesla_limit_too_low"
+
+COORDINATOR = "coordinator"
+UPDATE_INTERVAL_SECONDS = 60
