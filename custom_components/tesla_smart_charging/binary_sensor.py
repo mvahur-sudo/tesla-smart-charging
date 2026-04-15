@@ -28,6 +28,11 @@ BINARY_SENSORS: tuple[TeslaChargingBinarySensorDescription, ...] = (
         value_fn=lambda data: data.recommendation in {"charge", "charge_now"},
     ),
     TeslaChargingBinarySensorDescription(
+        key="cheap_time",
+        name="Cheap time",
+        value_fn=lambda data: data.reason in {"price_below_threshold", "cheap_only_window"},
+    ),
+    TeslaChargingBinarySensorDescription(
         key="car_home",
         name="Car home",
         value_fn=lambda data: data.car_home,

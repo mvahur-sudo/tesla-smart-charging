@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import json
 import logging
 from typing import Any
 
@@ -21,6 +22,14 @@ from .const import (
     ATTR_SOLAR_SURPLUS_W,
     ATTR_TARGET_BATTERY,
     ATTR_TESLA_LIMIT_TOO_LOW,
+    ATTR_TODAY_CHEAP_WINDOWS,
+    ATTR_TODAY_FALLBACK_WINDOWS,
+    ATTR_TODAY_RECOMMENDED_WINDOWS,
+    ATTR_TODAY_SOLAR_WINDOWS,
+    ATTR_TOMORROW_CHEAP_WINDOWS,
+    ATTR_TOMORROW_FALLBACK_WINDOWS,
+    ATTR_TOMORROW_RECOMMENDED_WINDOWS,
+    ATTR_TOMORROW_SOLAR_WINDOWS,
     CONF_BATTERY_MIN_DEFAULT,
     CONF_BATTERY_MIN_MONDAY,
     CONF_BATTERY_MIN_THURSDAY,
@@ -32,6 +41,8 @@ from .const import (
     CONF_NETWORK_FEE_CENTS,
     CONF_OTHER_FEES_CENTS,
     CONF_PRICE_ENTITY,
+    CONF_PRICE_TODAY_ENTITY,
+    CONF_PRICE_TOMORROW_ENTITY,
     CONF_SAUNA_BOOLEAN_ENTITY,
     CONF_SAUNA_POWER_ENTITY,
     CONF_SAUNA_POWER_THRESHOLD_W,
@@ -67,6 +78,14 @@ class PlannerResult:
     sauna_active: bool
     mode: str
     tesla_limit_too_low: bool
+    today_cheap_windows: list[dict[str, Any]]
+    tomorrow_cheap_windows: list[dict[str, Any]]
+    today_recommended_windows: list[dict[str, Any]]
+    tomorrow_recommended_windows: list[dict[str, Any]]
+    today_solar_windows: list[dict[str, Any]]
+    tomorrow_solar_windows: list[dict[str, Any]]
+    today_fallback_windows: list[dict[str, Any]]
+    tomorrow_fallback_windows: list[dict[str, Any]]
 
 
 class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
@@ -85,7 +104,6 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
 
     async def _async_update_data(self) -> PlannerResult:
         cfg = self.cfg
-
         car_home = self._get_state(cfg[CONF_TESLA_LOCATION_ENTITY]) == cfg.get(
             CONF_HOME_STATE, DEFAULT_HOME_STATE
         )
@@ -99,6 +117,19 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
         tesla_limit = self._get_float(cfg.get(CONF_TESLA_CHARGE_LIMIT_ENTITY))
         tesla_limit_too_low = tesla_limit is not None and tesla_limit < target_battery
 
+        today_prices = self._extract_price_windows(cfg.get(CONF_PRICE_TODAY_ENTITY))
+        tomorrow_prices = self._extract_price_windows(cfg.get(CONF_PRICE_TOMORROW_ENTITY))
+        today_cheap = self._cheap_windows(today_prices)
+        tomorrow_cheap = self._cheap_windows(tomorrow_prices)
+        today_solar = self._solar_windows(today_prices, solar_surplus)
+        tomorrow_solar = self._solar_windows(tomorrow_prices, solar_surplus)
+        today_fallback, tomorrow_fallback = self._fallback_windows(
+            today_prices, tomorrow_prices, battery, target_battery
+        )
+        today_recommended, tomorrow_recommended = self._recommended_windows(
+            mode, car_home, plugged_in, sauna_active, today_cheap, tomorrow_cheap, today_solar, tomorrow_solar, today_fallback, tomorrow_fallback
+        )
+
         recommendation, reason = self._compute_recommendation(
             car_home=car_home,
             plugged_in=plugged_in,
@@ -107,6 +138,8 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
             battery=battery,
             target_battery=target_battery,
             real_price=real_price,
+            today_recommended=today_recommended,
+            tomorrow_recommended=tomorrow_recommended,
         )
 
         return PlannerResult(
@@ -121,6 +154,14 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
             sauna_active=sauna_active,
             mode=mode,
             tesla_limit_too_low=tesla_limit_too_low,
+            today_cheap_windows=today_cheap,
+            tomorrow_cheap_windows=tomorrow_cheap,
+            today_recommended_windows=today_recommended,
+            tomorrow_recommended_windows=tomorrow_recommended,
+            today_solar_windows=today_solar,
+            tomorrow_solar_windows=tomorrow_solar,
+            today_fallback_windows=today_fallback,
+            tomorrow_fallback_windows=tomorrow_fallback,
         )
 
     def _compute_recommendation(
@@ -133,6 +174,8 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
         battery: float | None,
         target_battery: int,
         real_price: float | None,
+        today_recommended: list[dict[str, Any]],
+        tomorrow_recommended: list[dict[str, Any]],
     ) -> tuple[str, str]:
         max_price = float(self.cfg.get(CONF_MAX_PRICE_CENTS, 15.0))
 
@@ -150,14 +193,16 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
             return "wait", "battery_already_above_target"
         if mode == "ensure_ready":
             return "charge", "ensure_ready_mode"
-        if real_price is None:
+        if real_price is None and not today_recommended and not tomorrow_recommended:
             return "wait", "price_unavailable_safe_hold"
         if mode == "cheap_only":
-            if real_price <= max_price:
+            if real_price is not None and real_price <= max_price:
                 return "charge", "cheap_only_window"
             return "wait", "cheap_only_price_too_high"
-        if real_price <= max_price:
+        if real_price is not None and real_price <= max_price:
             return "charge", "price_below_threshold"
+        if today_recommended or tomorrow_recommended:
+            return "wait", "planner_window_available"
         return "wait", "waiting_for_cheaper_window"
 
     def _compute_deadline_and_target(self) -> tuple[datetime, int]:
@@ -170,9 +215,7 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
             deadline_time = self.cfg.get(CONF_WORKDAY_CUTOFF, DEFAULT_WORKDAY_CUTOFF)
         elif weekday == 3 and thursday_event:
             target = int(self.cfg.get(CONF_BATTERY_MIN_THURSDAY, 40))
-            deadline_time = self.cfg.get(
-                CONF_THURSDAY_EVENT_TIME, DEFAULT_THURSDAY_EVENT_TIME
-            )
+            deadline_time = self.cfg.get(CONF_THURSDAY_EVENT_TIME, DEFAULT_THURSDAY_EVENT_TIME)
         elif weekday >= 5:
             target = int(self.cfg.get(CONF_BATTERY_MIN_WEEKEND, 30))
             deadline_time = "10:00"
@@ -187,25 +230,27 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
         return deadline, target
 
     def _compute_real_price(self) -> float | None:
-        price_entity = self.cfg[CONF_PRICE_ENTITY]
-        raw = self._get_float(price_entity)
+        raw = self._get_float(self.cfg[CONF_PRICE_ENTITY])
         if raw is None:
             return None
-
-        unit = (self.hass.states.get(price_entity).attributes.get("unit_of_measurement") or "").lower()
-        if "eur/mwh" in unit or "€/mwh" in unit:
-            spot_cents = raw * 0.1
-        elif "eur/kwh" in unit or "€/kwh" in unit:
-            spot_cents = raw * 100
-        else:
-            spot_cents = raw
-
         return round(
-            spot_cents
+            self._normalize_to_cents(raw, self.cfg[CONF_PRICE_ENTITY])
             + float(self.cfg.get(CONF_NETWORK_FEE_CENTS, 0))
             + float(self.cfg.get(CONF_OTHER_FEES_CENTS, 0)),
             3,
         )
+
+    def _normalize_to_cents(self, raw: float, entity_id: str) -> float:
+        unit = (self.hass.states.get(entity_id).attributes.get("unit_of_measurement") or "").lower()
+        if "eur/mwh" in unit or "€/mwh" in unit:
+            return raw * 0.1
+        if "eur/kwh" in unit or "€/kwh" in unit:
+            return raw * 100
+        if "senti" in unit or "c/kwh" in unit:
+            if raw < 3:
+                return raw * 100
+            return raw
+        return raw
 
     def _compute_solar_surplus(self) -> float | None:
         solar = self._get_float(self.cfg[CONF_SOLAR_POWER_ENTITY])
@@ -222,13 +267,101 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
         threshold = float(self.cfg.get(CONF_SAUNA_POWER_THRESHOLD_W, 500.0))
         return sauna_bool or sauna_power >= threshold
 
+    def _extract_price_windows(self, entity_id: str | None) -> list[dict[str, Any]]:
+        if not entity_id:
+            return []
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return []
+        data = state.attributes.get("data")
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                data = None
+        if not isinstance(data, list):
+            return []
+        result: list[dict[str, Any]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            start = item.get("start")
+            end = item.get("end")
+            price = item.get("price")
+            if start is None or end is None or price is None:
+                continue
+            try:
+                price_cents = self._normalize_to_cents(float(price), entity_id)
+            except (TypeError, ValueError):
+                continue
+            result.append(
+                {
+                    "start": start,
+                    "end": end,
+                    "price_cents": round(
+                        price_cents
+                        + float(self.cfg.get(CONF_NETWORK_FEE_CENTS, 0))
+                        + float(self.cfg.get(CONF_OTHER_FEES_CENTS, 0)),
+                        3,
+                    ),
+                }
+            )
+        return result
+
+    def _cheap_windows(self, windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        max_price = float(self.cfg.get(CONF_MAX_PRICE_CENTS, 15.0))
+        return [w for w in windows if w["price_cents"] <= max_price]
+
+    def _solar_windows(self, windows: list[dict[str, Any]], solar_surplus: float | None) -> list[dict[str, Any]]:
+        if solar_surplus is None:
+            return []
+        threshold = float(self.cfg.get(CONF_SOLAR_MIN_SURPLUS_W, 1000.0))
+        if solar_surplus < threshold:
+            return []
+        return windows[: min(8, len(windows))]
+
+    def _fallback_windows(
+        self,
+        today: list[dict[str, Any]],
+        tomorrow: list[dict[str, Any]],
+        battery: float | None,
+        target_battery: int,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        if battery is None or battery >= target_battery:
+            return [], []
+        combined = [{**w, "day": "today"} for w in today] + [{**w, "day": "tomorrow"} for w in tomorrow]
+        combined.sort(key=lambda x: x["price_cents"])
+        selected = combined[: min(8, len(combined))]
+        return [w for w in selected if w["day"] == "today"], [w for w in selected if w["day"] == "tomorrow"]
+
+    def _recommended_windows(
+        self,
+        mode: str,
+        car_home: bool,
+        plugged_in: bool,
+        sauna_active: bool,
+        today_cheap: list[dict[str, Any]],
+        tomorrow_cheap: list[dict[str, Any]],
+        today_solar: list[dict[str, Any]],
+        tomorrow_solar: list[dict[str, Any]],
+        today_fallback: list[dict[str, Any]],
+        tomorrow_fallback: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        if not car_home or not plugged_in or sauna_active or mode == "dont_charge_today":
+            return [], []
+        if mode == "charge_now":
+            return today_cheap[:1] or today_fallback[:1], tomorrow_cheap[:0]
+        if mode == "cheap_only":
+            return today_cheap, tomorrow_cheap
+        today = today_cheap or today_solar or today_fallback
+        tomorrow = tomorrow_cheap or tomorrow_solar or tomorrow_fallback
+        return today, tomorrow
+
     def _get_state(self, entity_id: str | None) -> str | None:
         if not entity_id:
             return None
         state = self.hass.states.get(entity_id)
-        if state is None:
-            return None
-        if state.state in {"unknown", "unavailable"}:
+        if state is None or state.state in {"unknown", "unavailable"}:
             return None
         return state.state
 
@@ -259,4 +392,12 @@ class TeslaSmartChargingCoordinator(DataUpdateCoordinator[PlannerResult]):
             ATTR_SAUNA_ACTIVE: self.data.sauna_active,
             ATTR_MODE: self.data.mode,
             ATTR_TESLA_LIMIT_TOO_LOW: self.data.tesla_limit_too_low,
+            ATTR_TODAY_CHEAP_WINDOWS: self.data.today_cheap_windows,
+            ATTR_TOMORROW_CHEAP_WINDOWS: self.data.tomorrow_cheap_windows,
+            ATTR_TODAY_RECOMMENDED_WINDOWS: self.data.today_recommended_windows,
+            ATTR_TOMORROW_RECOMMENDED_WINDOWS: self.data.tomorrow_recommended_windows,
+            ATTR_TODAY_SOLAR_WINDOWS: self.data.today_solar_windows,
+            ATTR_TOMORROW_SOLAR_WINDOWS: self.data.tomorrow_solar_windows,
+            ATTR_TODAY_FALLBACK_WINDOWS: self.data.today_fallback_windows,
+            ATTR_TOMORROW_FALLBACK_WINDOWS: self.data.tomorrow_fallback_windows,
         }

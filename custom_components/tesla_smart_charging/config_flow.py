@@ -19,6 +19,8 @@ from .const import (
     CONF_NETWORK_FEE_CENTS,
     CONF_OTHER_FEES_CENTS,
     CONF_PRICE_ENTITY,
+    CONF_PRICE_TODAY_ENTITY,
+    CONF_PRICE_TOMORROW_ENTITY,
     CONF_SAUNA_BOOLEAN_ENTITY,
     CONF_SAUNA_POWER_ENTITY,
     CONF_SAUNA_POWER_THRESHOLD_W,
@@ -59,6 +61,8 @@ STEP_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME, default=DEFAULT_NAME): selector.TextSelector(),
         vol.Required(CONF_PRICE_ENTITY): _entity_selector("sensor"),
+        vol.Optional(CONF_PRICE_TODAY_ENTITY): _entity_selector("sensor"),
+        vol.Optional(CONF_PRICE_TOMORROW_ENTITY): _entity_selector("sensor"),
         vol.Required(CONF_TESLA_BATTERY_ENTITY): _entity_selector("sensor"),
         vol.Required(CONF_TESLA_LOCATION_ENTITY): _entity_selector("device_tracker"),
         vol.Required(CONF_TESLA_PLUGGED_ENTITY): _entity_selector("binary_sensor"),

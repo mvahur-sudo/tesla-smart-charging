@@ -7,6 +7,8 @@
         "data": {
           "name": "Name",
           "price_entity": "Current price entity",
+          "price_today_entity": "Today price list entity",
+          "price_tomorrow_entity": "Tomorrow price list entity",
           "tesla_battery_entity": "Tesla battery entity",
           "tesla_location_entity": "Tesla location entity",
           "tesla_plugged_entity": "Tesla plugged-in entity",

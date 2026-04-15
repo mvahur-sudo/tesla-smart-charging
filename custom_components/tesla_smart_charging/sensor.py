@@ -28,6 +28,16 @@ SENSORS: tuple[TeslaChargingSensorDescription, ...] = (
         value_fn=lambda data: data.real_price_cents,
     ),
     TeslaChargingSensorDescription(
+        key="today_planner",
+        name="Today planner",
+        value_fn=lambda data: f"recommended:{len(data.today_recommended_windows)} cheap:{len(data.today_cheap_windows)} solar:{len(data.today_solar_windows)} fallback:{len(data.today_fallback_windows)}",
+    ),
+    TeslaChargingSensorDescription(
+        key="tomorrow_planner",
+        name="Tomorrow planner",
+        value_fn=lambda data: f"recommended:{len(data.tomorrow_recommended_windows)} cheap:{len(data.tomorrow_cheap_windows)} solar:{len(data.tomorrow_solar_windows)} fallback:{len(data.tomorrow_fallback_windows)}",
+    ),
+    TeslaChargingSensorDescription(
         key="solar_surplus_w",
         name="Solar surplus",
         native_unit_of_measurement=UnitOfPower.WATT,

@@ -3,6 +3,8 @@ PLATFORMS = ["sensor", "binary_sensor"]
 
 CONF_NAME = "name"
 CONF_PRICE_ENTITY = "price_entity"
+CONF_PRICE_TODAY_ENTITY = "price_today_entity"
+CONF_PRICE_TOMORROW_ENTITY = "price_tomorrow_entity"
 CONF_TESLA_BATTERY_ENTITY = "tesla_battery_entity"
 CONF_TESLA_LOCATION_ENTITY = "tesla_location_entity"
 CONF_TESLA_PLUGGED_ENTITY = "tesla_plugged_entity"
@@ -51,6 +53,14 @@ ATTR_PLUGGED_IN = "plugged_in"
 ATTR_SAUNA_ACTIVE = "sauna_active"
 ATTR_MODE = "mode"
 ATTR_TESLA_LIMIT_TOO_LOW = "tesla_limit_too_low"
+ATTR_TODAY_CHEAP_WINDOWS = "today_cheap_windows"
+ATTR_TOMORROW_CHEAP_WINDOWS = "tomorrow_cheap_windows"
+ATTR_TODAY_RECOMMENDED_WINDOWS = "today_recommended_windows"
+ATTR_TOMORROW_RECOMMENDED_WINDOWS = "tomorrow_recommended_windows"
+ATTR_TODAY_SOLAR_WINDOWS = "today_solar_windows"
+ATTR_TOMORROW_SOLAR_WINDOWS = "tomorrow_solar_windows"
+ATTR_TODAY_FALLBACK_WINDOWS = "today_fallback_windows"
+ATTR_TOMORROW_FALLBACK_WINDOWS = "tomorrow_fallback_windows"
 
 COORDINATOR = "coordinator"
 UPDATE_INTERVAL_SECONDS = 60

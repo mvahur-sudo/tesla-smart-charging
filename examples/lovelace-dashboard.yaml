@@ -1,0 +1,58 @@
+title: Tesla Smart Charging
+views:
+  - title: EV Planner
+    path: ev-planner
+    icon: mdi:ev-station
+    cards:
+      - type: entities
+        title: Planner status
+        entities:
+          - entity: sensor.tesla_smart_charging_recommendation
+          - entity: sensor.tesla_smart_charging_reason
+          - entity: binary_sensor.tesla_smart_charging_charge_allowed
+          - entity: binary_sensor.tesla_smart_charging_car_home
+          - entity: binary_sensor.tesla_smart_charging_plugged_in
+          - entity: binary_sensor.tesla_smart_charging_sauna_active
+          - entity: binary_sensor.tesla_smart_charging_tesla_limit_too_low
+
+      - type: glance
+        title: Core metrics
+        entities:
+          - entity: sensor.tesla_smart_charging_real_price
+            name: Real price
+          - entity: sensor.tesla_smart_charging_solar_surplus
+            name: Solar surplus
+          - entity: sensor.tesla_smart_charging_target_battery
+            name: Target battery
+          - entity: sensor.tesla_smart_charging_next_deadline
+            name: Deadline
+
+      - type: entities
+        title: Today / tomorrow planner
+        entities:
+          - entity: sensor.tesla_smart_charging_today_planner
+          - entity: sensor.tesla_smart_charging_tomorrow_planner
+
+      - type: markdown
+        title: Window data
+        content: |
+          **Today recommended windows**
+          `{{ state_attr('sensor.tesla_smart_charging_today_planner', 'today_recommended_windows') }}`
+
+          **Tomorrow recommended windows**
+          `{{ state_attr('sensor.tesla_smart_charging_tomorrow_planner', 'tomorrow_recommended_windows') }}`
+
+          **Today cheap windows**
+          `{{ state_attr('sensor.tesla_smart_charging_today_planner', 'today_cheap_windows') }}`
+
+          **Tomorrow cheap windows**
+          `{{ state_attr('sensor.tesla_smart_charging_tomorrow_planner', 'tomorrow_cheap_windows') }}`
+
+      - type: entities
+        title: Manual controls from HA
+        entities:
+          - entity: input_select.ev_charging_mode
+          - entity: input_boolean.ev_thursday_event_active
+          - entity: input_number.ev_max_price_cents
+          - entity: input_number.ev_network_fee
+          - entity: input_number.ev_other_fees
